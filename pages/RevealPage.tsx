@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useMemo, useEffect } from 'react';
 import { AppRoute, DecodedFile } from '../types';
 import { Unlock, Upload, Eye, EyeOff, AlertTriangle, FileText, Image as ImageIcon, Music, Download, Play, Pause, File as FileIcon } from 'lucide-react';
 import { deriveKey, decryptData, decompressData } from '../utils/crypto';
@@ -36,11 +36,26 @@ export const RevealPage: React.FC<RevealPageProps> = ({ onNavigate }) => {
         setDecodedFile(null);
         setError(null);
         setDebugInfo(null);
+        setIsPlaying(false);
       };
       img.src = event.target?.result as string;
     };
     reader.readAsDataURL(file);
   };
+
+  // Memoize the object URL so it doesn't change on re-renders (like when isPlaying changes)
+  const decodedUrl = useMemo(() => {
+    if (!decodedFile) return null;
+    const blob = new Blob([decodedFile.data], { type: decodedFile.mimeType });
+    return URL.createObjectURL(blob);
+  }, [decodedFile]);
+
+  // Cleanup object URL
+  useEffect(() => {
+    return () => {
+      if (decodedUrl) URL.revokeObjectURL(decodedUrl);
+    };
+  }, [decodedUrl]);
 
   const handleReveal = async () => {
     if (!image) return;
@@ -48,6 +63,7 @@ export const RevealPage: React.FC<RevealPageProps> = ({ onNavigate }) => {
     setError(null);
     setDecodedFile(null);
     setDebugInfo(null);
+    setIsPlaying(false);
 
     setTimeout(async () => {
       try {
@@ -122,28 +138,23 @@ export const RevealPage: React.FC<RevealPageProps> = ({ onNavigate }) => {
   };
 
   const downloadFile = () => {
-      if (!decodedFile) return;
-      const blob = new Blob([decodedFile.data], { type: decodedFile.mimeType });
-      const url = URL.createObjectURL(blob);
+      if (!decodedFile || !decodedUrl) return;
       const a = document.createElement('a');
-      a.href = url;
+      a.href = decodedUrl;
       a.download = decodedFile.fileName;
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);
-      URL.revokeObjectURL(url);
   };
 
   const renderPreview = () => {
-      if (!decodedFile) return null;
-      const blob = new Blob([decodedFile.data], { type: decodedFile.mimeType });
-      const url = URL.createObjectURL(blob);
+      if (!decodedFile || !decodedUrl) return null;
 
       // Image Preview
       if (decodedFile.mimeType.startsWith('image/')) {
           return (
               <div className="mt-4 rounded-xl overflow-hidden border border-zinc-700 bg-black/20">
-                  <img src={url} alt="Decoded" className="max-w-full h-auto mx-auto" />
+                  <img src={decodedUrl} alt="Decoded" className="max-w-full h-auto mx-auto" />
               </div>
           );
       }
@@ -155,20 +166,30 @@ export const RevealPage: React.FC<RevealPageProps> = ({ onNavigate }) => {
                   <button 
                     onClick={() => {
                         if (audioRef.current) {
-                            if (isPlaying) audioRef.current.pause();
-                            else audioRef.current.play();
+                            if (isPlaying) {
+                                audioRef.current.pause();
+                            } else {
+                                audioRef.current.play();
+                            }
                             setIsPlaying(!isPlaying);
                         }
                     }}
-                    className="w-12 h-12 rounded-full bg-emerald-600 flex items-center justify-center hover:bg-emerald-500 transition-colors"
+                    className="w-12 h-12 rounded-full bg-emerald-600 flex items-center justify-center hover:bg-emerald-500 transition-colors shrink-0"
                   >
                       {isPlaying ? <Pause className="w-5 h-5 text-white" /> : <Play className="w-5 h-5 text-white ml-1" />}
                   </button>
-                  <div className="flex-1">
-                      <div className="text-sm font-medium text-white">{decodedFile.fileName}</div>
+                  <div className="flex-1 min-w-0">
+                      <div className="text-sm font-medium text-white truncate">{decodedFile.fileName}</div>
                       <div className="text-xs text-zinc-500">Audio Clip</div>
                   </div>
-                  <audio ref={audioRef} src={url} onEnded={() => setIsPlaying(false)} className="hidden" />
+                  <audio 
+                    ref={audioRef} 
+                    src={decodedUrl} 
+                    onEnded={() => setIsPlaying(false)} 
+                    onPause={() => setIsPlaying(false)}
+                    onPlay={() => setIsPlaying(true)}
+                    className="hidden" 
+                  />
               </div>
           );
       }
