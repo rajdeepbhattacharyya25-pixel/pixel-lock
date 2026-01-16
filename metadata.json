@@ -1,0 +1,7 @@
+{
+  "name": "PixelLock Web",
+  "description": "A secure, local-only steganography tool to hide encrypted text messages inside images using LSB encoding.",
+  "requestFramePermissions": [
+    "camera"
+  ]
+}
