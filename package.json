@@ -9,10 +9,11 @@
     "preview": "vite preview"
   },
   "dependencies": {
-    "react-dom": "^19.2.3",
     "react": "^19.2.3",
-    "lucide-react": "^0.562.0",
-    "qrcode": "1.5.3"
+    "react-dom": "^19.2.3",
+    "lucide-react": "0.344.0",
+    "qrcode": "1.5.3",
+    "@vercel/analytics": "^1.6.1"
   },
   "devDependencies": {
     "@types/node": "^22.14.0",

@@ -7,6 +7,7 @@ import { EmojiHidePage } from './pages/EmojiHidePage';
 import { EmojiRevealPage } from './pages/EmojiRevealPage';
 import { AboutPage } from './pages/AboutPage';
 import { Layout } from './components/Layout';
+import { Analytics } from "@vercel/analytics/react";
 
 const App: React.FC = () => {
   const [route, setRoute] = useState<AppRoute>(AppRoute.HOME);
@@ -33,6 +34,7 @@ const App: React.FC = () => {
   return (
     <Layout currentRoute={route} onNavigate={setRoute}>
       {renderPage()}
+      <Analytics />
     </Layout>
   );
 };
